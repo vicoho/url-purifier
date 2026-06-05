@@ -294,8 +294,8 @@
 
 ### 5.1 技术栈
 
-- **框架**：纯原生 HTML + CSS + JavaScript（零依赖，单文件）
-- **无需构建工具**：直接保存为 `.html` 文件即可运行
+- **框架**：纯原生 HTML + CSS + JavaScript（零依赖）
+- **无需构建工具**：直接打开 `index.html` 即可运行，无需打包编译
 - **兼容性**：现代浏览器（Chrome、Firefox、Safari、Edge 最新两版）
 
 ### 5.2 核心算法
@@ -356,7 +356,25 @@ function purifyURL(dirtyUrl) {
 
 ```
 url-purifier/
-└── index.html          # 单文件应用（HTML+CSS+JS内联）
+├── index.html          # 主入口文件（HTML结构）
+├── src/
+│   ├── css/
+│   │   └── style.css   # 样式文件（Claude风格主题、动效、响应式）
+│   └── js/
+│       └── app.js      # 核心逻辑（URL净化、历史记录、Tab切换、主题切换）
+├── docs/
+│   └── PRD.md          # 产品需求文档
+├── .github/
+│   ├── workflows/
+│   │   └── static.yml  # GitHub Pages 自动部署配置
+│   ├── ISSUE_TEMPLATE/
+│   │   ├── bug_report.md      # Bug 报告模板
+│   │   └── feature_request.md # 功能请求模板
+│   └── PULL_REQUEST_TEMPLATE.md
+├── README.md           # 项目说明
+├── CONTRIBUTING.md     # 贡献指南
+├── LICENSE             # 开源协议
+└── .gitignore          # Git 忽略规则
 ```
 
 ---
