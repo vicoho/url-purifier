@@ -4,25 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>网址净化工具 - URL Purifier</title>
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔗</text></svg>">
-    
-    <!-- Google Fonts -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23E57035'/%3E%3Cpath d='M24 34.5l-3.2 3.2a8 8 0 0011.3 11.3l5.5-5.5a8 8 0 00-2.5-13' fill='none' stroke='white' stroke-width='4.5' stroke-linecap='round'/%3E%3Cpath d='M40 29.5l3.2-3.2A8 8 0 0031.9 15l-5.5 5.5a8 8 0 002.5 13' fill='none' stroke='white' stroke-width='4.5' stroke-linecap='round'/%3E%3Cpath d='M27.5 36.5l9-9' stroke='white' stroke-width='4.5' stroke-linecap='round'/%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Styles -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@500;600;700&amp;display=swap" rel="stylesheet">
     <link rel="stylesheet" href="src/css/style.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <h1>网址净化工具</h1>
-            <p class="subtitle">URL PURIFIER</p>
-            <button class="theme-toggle" id="themeToggle" title="切换主题">
+    <main class="app-shell">
+        <header class="topbar">
+            <div class="brand-lockup">
+                <div class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 32 32" fill="none">
+                        <path d="M11.5 17.5l-1.8 1.8a4.7 4.7 0 006.6 6.6l3.1-3.1a4.7 4.7 0 00-1.2-7.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+                        <path d="M20.5 14.5l1.8-1.8a4.7 4.7 0 00-6.6-6.6l-3.1 3.1a4.7 4.7 0 001.2 7.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+                        <path d="M13.6 18.4l4.8-4.8" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="eyebrow">URL Purifier</p>
+                    <h1>网址净化工具</h1>
+                </div>
+            </div>
+            <button class="theme-toggle" id="themeToggle" title="切换主题" aria-label="切换主题">
                 <svg id="moonIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                 </svg>
@@ -40,63 +44,80 @@
             </button>
         </header>
 
-        <!-- Input Section -->
-        <section class="input-section">
-            <label class="input-label">粘贴被污染的网址文本</label>
-            <div class="input-wrapper">
-                <textarea 
-                    class="input-area" 
-                    id="inputText"
-                    placeholder="例如：https://exa😊mple.com/path
-或者：复制这段文字 https://exa mple.com 到浏览器打开"
-                ></textarea>
+        <section class="workspace-grid">
+            <div class="work-panel input-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="panel-kicker">Input</p>
+                        <h3>粘贴污染文本</h3>
+                    </div>
+                    <span class="char-count" id="charCount">已输入 0 字符</span>
+                </div>
+                <div class="input-wrapper">
+                    <textarea
+                        class="input-area"
+                        id="inputText"
+                        placeholder="例如：https://exa😊mple.com/path&#10;或者：复制这段文字 https://exa mple.com 到浏览器打开"
+                    ></textarea>
+                </div>
+                <div class="action-row">
+                    <button class="btn btn-primary" id="purifyBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                        </svg>
+                        一键净化
+                    </button>
+                    <span class="hint-text">Ctrl + Enter 快速净化</span>
+                </div>
             </div>
-            <div class="char-count" id="charCount">已输入 0 字符</div>
+
+            <div class="work-panel output-panel">
+                <div class="tabs">
+                    <button class="tab" data-tab="results" id="tabResults">净化结果</button>
+                    <button class="tab active" data-tab="history" id="tabHistory">历史记录</button>
+                </div>
+
+                <div class="tab-content" id="contentResults">
+                    <div id="resultsContainer">
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                            </svg>
+                            <p>净化后的网址会显示在这里</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content active" id="contentHistory">
+                    <div id="historyContainer">
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            <p>暂无历史记录，快去净化第一个网址吧</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
-        <!-- Action Button -->
-        <div class="action-bar">
-            <button class="btn btn-primary" id="purifyBtn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
-                </svg>
-                一键净化
-            </button>
-        </div>
-
-        <!-- Tabs -->
-        <div class="tabs">
-            <button class="tab" data-tab="results" id="tabResults">净化结果</button>
-            <button class="tab active" data-tab="history" id="tabHistory">历史记录</button>
-        </div>
-
-        <!-- Tab Content: Results -->
-        <div class="tab-content" id="contentResults">
-            <div id="resultsContainer">
-                <div class="empty-state">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                    </svg>
-                    <p>在上方粘贴文本，点击「一键净化」查看结果</p>
-                </div>
+        <section class="tips-strip" aria-label="使用提示">
+            <div>
+                <strong>Tip 01</strong>
+                <p>支持一次粘贴多段文本，自动识别其中的多个网址。</p>
             </div>
-        </div>
-
-        <!-- Tab Content: History -->
-        <div class="tab-content active" id="contentHistory">
-            <div id="historyContainer">
-                <div class="empty-state">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                    <p>暂无历史记录，快去净化第一个网址吧</p>
-                </div>
+            <div>
+                <strong>Tip 02</strong>
+                <p>所有处理都在浏览器本地完成，文本不会上传。</p>
             </div>
-        </div>
+            <div>
+                <strong>Tip 03</strong>
+                <p>按 Ctrl + Enter 可以快速净化当前输入内容。</p>
+            </div>
+        </section>
 
-        <!-- Footer -->
         <footer class="footer">
             <div class="footer-links">
                 <a href="#" onclick="showModal('help'); return false;">使用说明</a>
@@ -105,17 +126,15 @@
             </div>
             <p class="footer-copyright">网址净化工具 · 纯本地处理，保护您的隐私</p>
         </footer>
-    </div>
+    </main>
 
-    <!-- Toast -->
     <div class="toast" id="toast"></div>
 
-    <!-- Modal -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">
             <div class="modal-header">
                 <h3 class="modal-title" id="modalTitle">标题</h3>
-                <button class="modal-close" onclick="closeModal()">
+                <button class="modal-close" onclick="closeModal()" aria-label="关闭">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -127,7 +146,6 @@
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="src/js/app.js"></script>
 </body>
 </html>

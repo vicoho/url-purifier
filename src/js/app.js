@@ -91,9 +91,9 @@ function extractURLsAggressive(text) {
     const results = [];
     const seen = new Set();
     
-    // Pattern 1: Extract URLs from text, handling various pollution types
-    // This regex finds http(s):// and captures until a clear delimiter
-    const pattern = /https?:\/\/[^\s\u4e00-\u9fa5]+/gi;
+    // Capture generously after http(s):// so polluted URLs with spaces, CJK text,
+    // emoji, or full-width notes can still be purified before validation.
+    const pattern = /https?:\/\/[^\n\r<>]+/gi;
     let m;
     while ((m = pattern.exec(text)) !== null) {
         const rawMatch = m[0];
@@ -194,20 +194,22 @@ function renderResults(results) {
         return;
     }
     
-    const html = results.map((r, i) => `
+    const html = results.map((r, i) => {
+        const safeUrlArg = jsStringAttr(r.purified);
+        return `
         <div class="result-card" style="animation: fadeIn 0.3s ease ${i * 0.05}s both">
             <a href="${escapeHtml(r.purified)}" target="_blank" rel="noopener noreferrer" class="result-url">
-                🔗 ${escapeHtml(r.purified)}
+                ${escapeHtml(r.purified)}
             </a>
             <div class="result-actions">
-                <button class="btn btn-secondary btn-sm" onclick="copyText('${escapeHtml(r.purified)}')">
+                <button class="btn btn-secondary btn-sm" onclick="copyText(${safeUrlArg})">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                     </svg>
                     复制
                 </button>
-                <button class="btn btn-secondary btn-sm" onclick="window.open('${escapeHtml(r.purified)}', '_blank', 'noopener,noreferrer')">
+                <button class="btn btn-secondary btn-sm" onclick="window.open(${safeUrlArg}, '_blank', 'noopener,noreferrer')">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                         <polyline points="15 3 21 3 21 9"></polyline>
@@ -217,7 +219,7 @@ function renderResults(results) {
                 </button>
             </div>
         </div>
-    `).join('');
+    `}).join('');
     
     const allUrls = results.map(r => r.purified).join('\n');
     
@@ -226,7 +228,7 @@ function renderResults(results) {
             ${html}
         </div>
         <div style="text-align: center; margin-top: 16px;">
-            <button class="btn btn-secondary" onclick="copyText('${escapeHtml(allUrls)}')">
+            <button class="btn btn-secondary" onclick="copyText(${jsStringAttr(allUrls)})">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -415,6 +417,10 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function jsStringAttr(text) {
+    return JSON.stringify(text).replace(/"/g, '&quot;');
+}
+
 // ===== History Detail Modal =====
 function showHistoryDetail(id) {
     const item = historyData.find(h => h.id === id);
@@ -433,7 +439,7 @@ function showHistoryDetail(id) {
             <div class="modal-section-label">原始文本</div>
             <div class="modal-text modal-text-copyable" onclick="copyModalText(this)" title="点击复制">
                 ${escapeHtml(item.originalText)}
-                <span class="copy-hint">📋 点击复制</span>
+                <span class="copy-hint">点击复制</span>
             </div>
         </div>
         <div class="modal-section">
@@ -465,7 +471,7 @@ function copyModalText(element) {
         hint.textContent = '✓ 已复制';
         hint.style.color = 'var(--success)';
         setTimeout(() => {
-            hint.textContent = '📋 点击复制';
+            hint.textContent = '点击复制';
             hint.style.color = '';
         }, 2000);
     }
