@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>网址净化工具 - URL Purifier</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23E57035'/%3E%3Cpath d='M24 34.5l-3.2 3.2a8 8 0 0011.3 11.3l5.5-5.5a8 8 0 00-2.5-13' fill='none' stroke='white' stroke-width='4.5' stroke-linecap='round'/%3E%3Cpath d='M40 29.5l3.2-3.2A8 8 0 0031.9 15l-5.5 5.5a8 8 0 002.5 13' fill='none' stroke='white' stroke-width='4.5' stroke-linecap='round'/%3E%3Cpath d='M27.5 36.5l9-9' stroke='white' stroke-width='4.5' stroke-linecap='round'/%3E%3C/svg%3E">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@500;600;700&amp;display=swap" rel="stylesheet">
     <link rel="stylesheet" href="src/css/style.css">
 </head>
 <body>
@@ -26,7 +23,7 @@
                     <h1>网址净化工具</h1>
                 </div>
             </div>
-            <button class="theme-toggle" id="themeToggle" title="切换主题" aria-label="切换主题">
+            <button class="theme-toggle" id="themeToggle" type="button" title="切换到深色模式" aria-label="切换到深色模式">
                 <svg id="moonIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                 </svg>
@@ -53,6 +50,7 @@
                     </div>
                     <span class="char-count" id="charCount">已输入 0 字符</span>
                 </div>
+                <label class="sr-only" for="inputText">需要净化的文本</label>
                 <div class="input-wrapper">
                     <textarea
                         class="input-area"
@@ -67,17 +65,18 @@
                         </svg>
                         一键净化
                     </button>
-                    <span class="hint-text">Ctrl + Enter 快速净化</span>
+                    <button class="btn btn-secondary" type="button" id="clearInputBtn">清空输入</button>
+                    <span class="hint-text">⌘ / Ctrl + Enter 快速净化</span>
                 </div>
             </div>
 
             <div class="work-panel output-panel">
-                <div class="tabs">
-                    <button class="tab" data-tab="results" id="tabResults">净化结果</button>
-                    <button class="tab active" data-tab="history" id="tabHistory">历史记录</button>
+                <div class="tabs" role="tablist" aria-label="输出内容">
+                    <button class="tab" data-tab="results" id="tabResults" type="button" role="tab" aria-selected="false" aria-controls="contentResults" tabindex="-1">净化结果</button>
+                    <button class="tab active" data-tab="history" id="tabHistory" type="button" role="tab" aria-selected="true" aria-controls="contentHistory" tabindex="0">历史记录</button>
                 </div>
 
-                <div class="tab-content" id="contentResults">
+                <div class="tab-content" id="contentResults" role="tabpanel" aria-labelledby="tabResults" hidden>
                     <div id="resultsContainer">
                         <div class="empty-state">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -89,7 +88,7 @@
                     </div>
                 </div>
 
-                <div class="tab-content active" id="contentHistory">
+                <div class="tab-content active" id="contentHistory" role="tabpanel" aria-labelledby="tabHistory">
                     <div id="historyContainer">
                         <div class="empty-state">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -114,27 +113,27 @@
             </div>
             <div>
                 <strong>Tip 03</strong>
-                <p>按 Ctrl + Enter 可以快速净化当前输入内容。</p>
+                <p>按 ⌘ / Ctrl + Enter 可以快速净化当前输入内容。</p>
             </div>
         </section>
 
         <footer class="footer">
             <div class="footer-links">
-                <a href="#" onclick="showModal('help'); return false;">使用说明</a>
-                <a href="#" onclick="showModal('faq'); return false;">常见问题</a>
-                <a href="#" onclick="showModal('about'); return false;">关于</a>
+                <button type="button" class="footer-link" data-action="help-help">使用说明</button>
+                <button type="button" class="footer-link" data-action="help-faq">常见问题</button>
+                <button type="button" class="footer-link" data-action="help-about">关于</button>
             </div>
             <p class="footer-copyright">网址净化工具 · 纯本地处理，保护您的隐私</p>
         </footer>
     </main>
 
-    <div class="toast" id="toast"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
     <div class="modal-overlay" id="modalOverlay">
-        <div class="modal">
+        <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
             <div class="modal-header">
                 <h3 class="modal-title" id="modalTitle">标题</h3>
-                <button class="modal-close" onclick="closeModal()" aria-label="关闭">
+                <button class="modal-close" type="button" data-action="modal-close" aria-label="关闭">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -146,6 +145,6 @@
         </div>
     </div>
 
-    <script src="src/js/app.js"></script>
+    <script type="module" src="src/js/app.js"></script>
 </body>
 </html>
