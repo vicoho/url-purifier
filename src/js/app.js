@@ -1,268 +1,39 @@
-import { extractAndPurifyUrls, redactCredentials } from './purifier.js';
-
-const MAX_HISTORY = 20;
-const STORAGE_KEY = 'url_purifier_history';
-const THEME_KEY = 'url_purifier_theme';
-let currentResults = [];
-let historyData = [];
-let toastTimer;
-let modalReturnFocus;
-
-const $ = (id) => document.getElementById(id);
-const inputText = $('inputText');
-const charCount = $('charCount');
-const purifyBtn = $('purifyBtn');
-const resultsContainer = $('resultsContainer');
-const historyContainer = $('historyContainer');
-const toast = $('toast');
-const modalOverlay = $('modalOverlay');
-const modal = $('modal');
-const modalTitle = $('modalTitle');
-const modalBody = $('modalBody');
-const modalFooter = $('modalFooter');
-const themeToggle = $('themeToggle');
-
-function element(tag, options = {}, children = []) {
-  const node = document.createElement(tag);
-  Object.entries(options).forEach(([key, value]) => {
-    if (key === 'text') node.textContent = value;
-    else if (key === 'className') node.className = value;
-    else if (key === 'dataset') Object.assign(node.dataset, value);
-    else node.setAttribute(key, value);
-  });
-  node.append(...children.filter(Boolean));
-  return node;
+(function () {
+'use strict';
+if (!globalThis.UrlPurifier || !globalThis.UrlPurifierI18n) {
+  console.error('URL Purifier dependencies did not load.');
+  document.getElementById('resultsContainer')?.replaceChildren(Object.assign(document.createElement('p'), { className: 'empty-state', textContent: '应用依赖未能加载，请刷新页面或检查 src/js/purifier.js。' }));
+  return;
 }
-
-function icon(name) {
-  const icons = { copy: '⧉', visit: '↗', trash: '⌫', view: '◉', close: '×' };
-  return element('span', { text: icons[name] || '', 'aria-hidden': 'true' });
-}
-
-function setTheme(isDark) {
-  document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
-  themeToggle.setAttribute('aria-label', isDark ? '切换到浅色模式' : '切换到深色模式');
-  themeToggle.title = themeToggle.getAttribute('aria-label');
-  $('moonIcon').hidden = isDark;
-  $('sunIcon').hidden = !isDark;
-  localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
-}
-
-function initTheme() {
-  const saved = localStorage.getItem(THEME_KEY);
-  setTheme(saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches);
-}
-
-function switchTab(name, focus = false) {
-  const results = name === 'results';
-  ['results', 'history'].forEach((tab) => {
-    const selected = tab === name;
-    const button = $(`tab${tab[0].toUpperCase()}${tab.slice(1)}`);
-    const panel = $(`content${tab[0].toUpperCase()}${tab.slice(1)}`);
-    button.classList.toggle('active', selected);
-    button.setAttribute('aria-selected', String(selected));
-    button.tabIndex = selected ? 0 : -1;
-    panel.classList.toggle('active', selected);
-    panel.hidden = !selected;
-    if (selected && focus) button.focus();
-  });
-  if (!results) renderHistory();
-}
-
-function showToast(message, type = 'info') {
-  clearTimeout(toastTimer);
-  toast.textContent = message;
-  toast.dataset.type = type;
-  toast.classList.add('show');
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
-}
-
-function makeButton(label, action, payload, className = 'btn btn-secondary btn-sm') {
-  return element('button', { type: 'button', className, text: label, dataset: { action, payload: String(payload ?? '') } });
-}
-
-function createLink(url, className = 'result-url', label = url) {
-  return element('a', { href: url, target: '_blank', rel: 'noopener noreferrer', className, text: label });
-}
-
-function emptyState(title, description) {
-  const state = element('div', { className: 'empty-state' });
-  state.append(element('p', { text: title }));
-  if (description) state.append(element('p', { className: 'empty-state-detail', text: description }));
-  return state;
-}
-
-function resultStatus(result) {
-  if (!result.changed) return '网址本身已有效';
-  return result.confidence === 'low' || result.confidence === 'medium' ? '建议结果，请核对后访问' : '已清理污染字符';
-}
-
-function renderResults(results) {
-  resultsContainer.replaceChildren();
-  if (!results.length) {
-    resultsContainer.append(emptyState('未检测到有效网址', '请确认内容中包含完整的 http:// 或 https:// 地址'));
-    return;
-  }
-  const list = element('div', { className: 'result-list' });
-  results.forEach((result) => {
-    const card = element('article', { className: 'result-card' });
-    card.append(
-      element('p', { className: 'result-label', text: '原始候选 URL' }),
-      element('p', { className: 'result-original', text: result.hasCredentials ? redactCredentials(result.original) : result.original }),
-      element('p', { className: 'result-label', text: '净化后的 URL' }),
-      createLink(result.purified),
-      element('p', { className: `result-status ${result.warning ? 'has-warning' : ''}`, text: `${resultStatus(result)}${result.changed ? ` · 已修改约 ${result.changeCount} 个字符` : ''}` }),
-    );
-    if (result.warning) card.append(element('p', { className: 'result-warning', text: result.warning }));
-    const actions = element('div', { className: 'result-actions' });
-    actions.append(makeButton('复制', 'copy', result.purified), makeButton('访问', 'visit', result.purified));
-    card.append(actions);
-    list.append(card);
-  });
-  resultsContainer.append(list, makeButton('复制全部结果', 'copy-all', results.map((item) => item.purified).join('\n'), 'btn btn-secondary'));
-}
-
-function validHistoryEntry(value) {
-  return value && typeof value.id === 'string' && Number.isFinite(value.timestamp) && Array.isArray(value.results);
-}
-
-function loadHistory() {
-  try {
-    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    historyData = Array.isArray(data) ? data.map((entry) => {
-      if (validHistoryEntry(entry)) return entry;
-      if (entry && Array.isArray(entry.urls) && Number.isFinite(entry.timestamp)) {
-        return { id: String(entry.id || entry.timestamp), timestamp: entry.timestamp, results: entry.urls.map((purified) => ({ purified, original: purified, changed: false, changeCount: 0, warning: '', confidence: 'high', hasCredentials: false })) };
-      }
-      return null;
-    }).filter(Boolean).slice(0, MAX_HISTORY) : [];
-  } catch { historyData = []; }
-  renderHistory();
-}
-
-function saveHistory() { localStorage.setItem(STORAGE_KEY, JSON.stringify(historyData)); }
-
-function historySafeResult(result) {
-  const copy = { ...result };
-  if (copy.hasCredentials) {
-    copy.original = redactCredentials(copy.original);
-    copy.purified = redactCredentials(copy.purified);
-  }
-  return copy;
-}
-
-function addHistory(results) {
-  historyData.unshift({ id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`, timestamp: Date.now(), results: results.map(historySafeResult) });
-  historyData = historyData.slice(0, MAX_HISTORY);
-  saveHistory();
-  renderHistory();
-}
-
-function formatTime(timestamp) { return new Date(timestamp).toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); }
-
-function renderHistory() {
-  historyContainer.replaceChildren();
-  if (!historyData.length) { historyContainer.append(emptyState('暂无历史记录，快去净化第一个网址吧')); return; }
-  const list = element('div', { className: 'history-list' });
-  historyData.forEach((entry) => {
-    const card = element('article', { className: 'history-item' });
-    const header = element('div', { className: 'history-header' }, [element('span', { className: 'history-time', text: formatTime(entry.timestamp) }), element('span', { className: 'history-count', text: `${entry.results.length} 个 URL` })]);
-    const urls = element('div', { className: 'history-urls' });
-    entry.results.forEach((result) => urls.append(createLink(result.purified, 'history-url-link')));
-    const actions = element('div', { className: 'history-actions' });
-    actions.append(makeButton('查看详情', 'history-detail', entry.id), makeButton('删除', 'history-delete', entry.id));
-    card.append(header, urls, actions); list.append(card);
-  });
-  historyContainer.append(list, makeButton('清空全部历史记录', 'history-clear', '', 'btn btn-secondary'));
-}
-
-function setModal(title, body, actions, trigger) {
-  modalReturnFocus = trigger || document.activeElement;
-  modalTitle.textContent = title;
-  modalBody.replaceChildren(...body);
-  modalFooter.replaceChildren(...actions);
-  modalOverlay.classList.add('active');
-  document.body.classList.add('modal-open');
-  requestAnimationFrame(() => modal.querySelector('button, a, [tabindex]:not([tabindex="-1"])')?.focus());
-}
-
-function closeModal() {
-  if (!modalOverlay.classList.contains('active')) return;
-  modalOverlay.classList.remove('active'); document.body.classList.remove('modal-open');
-  modalReturnFocus?.focus?.();
-}
-
-function showHistoryDetail(id, trigger) {
-  const entry = historyData.find((item) => item.id === id); if (!entry) return;
-  const urls = element('div', { className: 'modal-text' });
-  entry.results.forEach((result) => urls.append(createLink(result.purified, 'history-url-link')));
-  setModal('历史记录详情', [element('p', { className: 'modal-section-label', text: `处理时间：${formatTime(entry.timestamp)}` }), urls], [makeButton('关闭', 'modal-close', ''), makeButton('复制全部 URL', 'copy-all', entry.results.map((r) => r.purified).join('\n'), 'btn btn-primary')], trigger);
-}
-
-function showHelp(type, trigger) {
-  const content = {
-    help: ['使用说明', '粘贴包含完整 http:// 或 https:// 地址的文本，点击净化后可复制或主动访问结果。'],
-    faq: ['常见问题', '处理完全在浏览器本地完成。严重污染的网址属于启发式结果，访问前请人工核对。'],
-    about: ['关于', '网址净化工具使用原生 HTML、CSS 与 JavaScript 实现，不加载第三方字体或统计服务。'],
-  }[type];
-  setModal(content[0], [element('p', { className: 'modal-text', text: content[1] })], [makeButton('关闭', 'modal-close', '')], trigger);
-}
-
-async function copyText(text) {
-  try { await navigator.clipboard.writeText(text); } catch {
-    const helper = element('textarea', { 'aria-hidden': 'true' }); helper.value = text; document.body.append(helper); helper.select();
-    const copied = document.execCommand('copy'); helper.remove(); if (!copied) throw new Error('copy failed');
-  }
-  showToast('已复制到剪贴板', 'success');
-}
-
-function purify() {
-  const text = inputText.value;
-  if (!text.trim()) { showToast('请先粘贴包含网址的文本', 'warning'); return; }
-  purifyBtn.disabled = true;
-  try {
-    currentResults = extractAndPurifyUrls(text);
-    renderResults(currentResults);
-    if (currentResults.length) { addHistory(currentResults); showToast(`已处理 ${currentResults.length} 个网址`, 'success'); }
-    else showToast('未检测到有效网址', 'warning');
-    switchTab('results');
-  } catch (error) {
-    currentResults = []; renderResults([]); switchTab('results'); showToast('处理失败，请检查输入内容', 'error'); console.error(error);
-  } finally { purifyBtn.disabled = false; }
-}
-
-document.addEventListener('click', (event) => {
-  const target = event.target.closest('[data-action]'); if (!target) return;
-  const { action, payload } = target.dataset;
-  if (action === 'copy' || action === 'copy-all') copyText(payload).catch(() => showToast('复制失败，请手动复制', 'error'));
-  if (action === 'visit') window.open(payload, '_blank', 'noopener,noreferrer');
-  if (action === 'history-detail') showHistoryDetail(payload, target);
-  if (action === 'history-delete') { historyData = historyData.filter((item) => item.id !== payload); saveHistory(); renderHistory(); showToast('已删除记录', 'success'); }
-  if (action === 'history-clear') setModal('确认清空', [element('p', { className: 'modal-text', text: '确定要清空所有历史记录吗？此操作不可恢复。' })], [makeButton('取消', 'modal-close', ''), makeButton('确认清空', 'history-clear-confirm', '', 'btn btn-primary')], target);
-  if (action === 'history-clear-confirm') { historyData = []; saveHistory(); renderHistory(); switchTab('history'); closeModal(); showToast('历史记录已清空', 'success'); }
-  if (action === 'modal-close') closeModal();
-  if (action.startsWith('help-')) showHelp(action.slice(5), target);
-});
-
-purifyBtn.addEventListener('click', purify);
-$('clearInputBtn').addEventListener('click', () => { inputText.value = ''; charCount.textContent = '已输入 0 字符'; inputText.focus(); });
-themeToggle.addEventListener('click', () => setTheme(document.documentElement.dataset.theme !== 'dark'));
-inputText.addEventListener('input', () => { charCount.textContent = `已输入 ${inputText.value.length} 字符`; });
-inputText.addEventListener('keydown', (event) => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); purify(); } });
-document.querySelector('.tabs').addEventListener('keydown', (event) => {
-  const tabs = ['results', 'history']; const index = tabs.findIndex((name) => $(`tab${name[0].toUpperCase()}${name.slice(1)}`) === document.activeElement);
-  if (index < 0) return; let next;
-  if (event.key === 'Home') next = 0; else if (event.key === 'End') next = 1; else if (event.key === 'ArrowLeft') next = (index + 1) % 2; else if (event.key === 'ArrowRight') next = (index + 1) % 2; else return;
-  event.preventDefault(); switchTab(tabs[next], true);
-});
-document.querySelector('.tabs').addEventListener('click', (event) => { const tab = event.target.closest('[role="tab"]'); if (tab) switchTab(tab.dataset.tab); });
-modalOverlay.addEventListener('click', (event) => { if (event.target === modalOverlay) closeModal(); });
-document.addEventListener('keydown', (event) => {
-  if (!modalOverlay.classList.contains('active')) return;
-  if (event.key === 'Escape') { closeModal(); return; }
-  if (event.key === 'Tab') { const focusable = [...modal.querySelectorAll('button, a, [tabindex]:not([tabindex="-1"])')].filter((node) => !node.disabled); const first = focusable[0]; const last = focusable.at(-1); if (!first) return; if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); } }
-});
-
-initTheme();
-loadHistory();
-switchTab('history');
+const { extractAndPurifyUrls, redactCredentials } = globalThis.UrlPurifier;
+const dictionaries = globalThis.UrlPurifierI18n;
+const MAX_HISTORY = 20, STORAGE_KEY = 'url_purifier_history', THEME_KEY = 'url_purifier_theme', LANGUAGE_KEY = 'url_purifier_language';
+const safeStorage = Object.freeze({ get: (key) => { try { return localStorage.getItem(key); } catch { return null; } }, set: (key, value) => { try { localStorage.setItem(key, value); return true; } catch { return false; } } });
+let currentResults = [], historyData = [], toastTimer, modalReturnFocus, currentLanguage = safeStorage.get(LANGUAGE_KEY) === 'en' ? 'en' : 'zh-CN';
+const $ = (id) => document.getElementById(id); const inputText = $('inputText'), charCount = $('charCount'), purifyBtn = $('purifyBtn'), resultsContainer = $('resultsContainer'), historyContainer = $('historyContainer'), toast = $('toast'), modalOverlay = $('modalOverlay'), modal = $('modal'), modalTitle = $('modalTitle'), modalBody = $('modalBody'), modalFooter = $('modalFooter'), themeToggle = $('themeToggle'), languageToggle = $('languageToggle');
+function t(key, params = {}) { return (dictionaries[currentLanguage][key] || dictionaries['zh-CN'][key] || key).replace(/\{(\w+)\}/gu, (_, name) => String(params[name] ?? '')); }
+function el(tag, options = {}, children = []) { const node = document.createElement(tag); Object.entries(options).forEach(([key, value]) => { if (key === 'text') node.textContent = value; else if (key === 'className') node.className = value; else if (key === 'dataset') Object.assign(node.dataset, value); else node.setAttribute(key, value); }); node.append(...children.filter(Boolean)); return node; }
+function button(key, action, payload = '', className = 'btn btn-secondary btn-sm') { return el('button', { type: 'button', className, text: t(key), dataset: { action, payload: String(payload) } }); }
+function setTheme(dark) { document.documentElement.dataset.theme = dark ? 'dark' : 'light'; themeToggle.setAttribute('aria-label', t(dark ? 'themeLight' : 'themeDark')); themeToggle.title = themeToggle.getAttribute('aria-label'); $('moonIcon').hidden = dark; $('sunIcon').hidden = !dark; safeStorage.set(THEME_KEY, dark ? 'dark' : 'light'); }
+function link(url, className = 'result-url', label = url) { return el('a', { href: url, target: '_blank', rel: 'noopener noreferrer', className, text: label }); }
+function formatTime(timestamp) { return new Date(timestamp).toLocaleString(currentLanguage === 'en' ? 'en-US' : 'zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+function showToast(message, type = 'info') { clearTimeout(toastTimer); toast.textContent = message; toast.dataset.type = type; toast.classList.add('show'); toastTimer = setTimeout(() => toast.classList.remove('show'), 2200); }
+function switchTab(name, focus = false) { ['results', 'history'].forEach((tab) => { const selected = tab === name, upper = `${tab[0].toUpperCase()}${tab.slice(1)}`, btn = $(`tab${upper}`), panel = $(`content${upper}`); btn.classList.toggle('active', selected); btn.setAttribute('aria-selected', String(selected)); btn.tabIndex = selected ? 0 : -1; panel.classList.toggle('active', selected); panel.hidden = !selected; if (selected && focus) btn.focus(); }); if (name === 'history') renderHistory(); }
+function empty(title, detail = '') { const node = el('div', { className: 'empty-state' }, [el('p', { text: title }), detail && el('p', { className: 'empty-state-detail', text: detail })]); return node; }
+function renderResults(results = currentResults) { resultsContainer.replaceChildren(); if (!results.length) { resultsContainer.append(empty(t('noUrls'), t('noUrlsHint'))); return; } const list = el('div', { className: 'result-list' }); results.forEach((result) => { const status = !result.changed ? t('valid') : result.confidence === 'medium' || result.confidence === 'low' ? t('review') : t('cleaned'); const card = el('article', { className: 'result-card' }); card.append(el('p', { className: 'result-label', text: t('original') }), el('p', { className: 'result-original', text: result.hasCredentials ? redactCredentials(result.original) : result.original }), el('p', { className: 'result-label', text: t('purified') }), link(result.purified), el('p', { className: `result-status ${result.warning ? 'has-warning' : ''}`, text: `${status}${result.changed ? ` · ${t('modified', { count: result.changeCount })}` : ''}` })); if (result.warning) card.append(el('p', { className: 'result-warning', text: result.hasCredentials ? t('credentials') : t('review') })); card.append(el('div', { className: 'result-actions' }, [button('copy', 'copy', result.purified), button('visit', 'visit', result.purified)])); list.append(card); }); resultsContainer.append(list, button('copyAll', 'copy-all', results.map((r) => r.purified).join('\n'), 'btn btn-secondary')); }
+function validEntry(entry) { return entry && typeof entry.id === 'string' && Number.isFinite(entry.timestamp) && Array.isArray(entry.results); }
+function loadHistory() { try { const saved = JSON.parse(safeStorage.get(STORAGE_KEY) || '[]'); historyData = Array.isArray(saved) ? saved.map((entry) => validEntry(entry) ? entry : entry && Array.isArray(entry.urls) && Number.isFinite(entry.timestamp) ? { id: String(entry.id || entry.timestamp), timestamp: entry.timestamp, results: entry.urls.map((purified) => ({ original: purified, purified, changed: false, changeCount: 0, warning: '', confidence: 'high', hasCredentials: false })) } : null).filter(Boolean).slice(0, MAX_HISTORY) : []; } catch { historyData = []; } renderHistory(); }
+function saveHistory() { safeStorage.set(STORAGE_KEY, JSON.stringify(historyData)); }
+function addHistory(results) { historyData.unshift({ id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`, timestamp: Date.now(), results: results.map((r) => r.hasCredentials ? { ...r, original: redactCredentials(r.original), purified: redactCredentials(r.purified) } : r) }); historyData = historyData.slice(0, MAX_HISTORY); saveHistory(); renderHistory(); }
+function renderHistory() { historyContainer.replaceChildren(); if (!historyData.length) { historyContainer.append(empty(t('historyEmpty'))); return; } const list = el('div', { className: 'history-list' }); historyData.forEach((entry) => { const urls = el('div', { className: 'history-urls' }); entry.results.forEach((r) => urls.append(link(r.purified, 'history-url-link'))); const card = el('article', { className: 'history-item' }, [el('div', { className: 'history-header' }, [el('span', { className: 'history-time', text: formatTime(entry.timestamp) }), el('span', { className: 'history-count', text: t('historyCount', { count: entry.results.length }) })]), urls, el('div', { className: 'history-actions' }, [button('detail', 'history-detail', entry.id), button('delete', 'history-delete', entry.id)])]); list.append(card); }); historyContainer.append(list, button('clearHistory', 'history-clear', '', 'btn btn-secondary')); }
+function setModal(title, body, actions, trigger) { modalReturnFocus = trigger || document.activeElement; modalTitle.textContent = title; modalBody.replaceChildren(...body); modalFooter.replaceChildren(...actions); modalOverlay.classList.add('active'); document.body.classList.add('modal-open'); requestAnimationFrame(() => modal.querySelector('button, a')?.focus()); }
+function closeModal() { if (!modalOverlay.classList.contains('active')) return; modalOverlay.classList.remove('active'); document.body.classList.remove('modal-open'); modalReturnFocus?.focus?.(); }
+function details(id, trigger) { const entry = historyData.find((item) => item.id === id); if (!entry) return; const urls = el('div', { className: 'modal-text' }); entry.results.forEach((r) => urls.append(link(r.purified, 'history-url-link'))); setModal(t('detail'), [el('p', { className: 'modal-section-label', text: t('time', { time: formatTime(entry.timestamp) }) }), urls], [button('close', 'modal-close'), button('copyAllUrls', 'copy-all', entry.results.map((r) => r.purified).join('\n'), 'btn btn-primary')], trigger); }
+function info(type, trigger) { const key = type === 'help' ? 'helpText' : type === 'faq' ? 'faqText' : 'aboutText'; setModal(t(type), [el('p', { className: 'modal-text', text: t(key) })], [button('close', 'modal-close')], trigger); }
+async function copy(value) { try { await navigator.clipboard.writeText(value); } catch { const area = el('textarea', { 'aria-hidden': 'true' }); area.value = value; document.body.append(area); area.select(); const ok = document.execCommand('copy'); area.remove(); if (!ok) throw new Error('copy'); } showToast(t('copySuccess'), 'success'); }
+function purify() { if (!inputText.value.trim()) { showToast(t('inputRequired'), 'warning'); return; } purifyBtn.disabled = true; try { currentResults = extractAndPurifyUrls(inputText.value); renderResults(); if (currentResults.length) { addHistory(currentResults); showToast(t('processed', { count: currentResults.length }), 'success'); } else showToast(t('noUrls'), 'warning'); switchTab('results'); } catch (error) { console.error(error); currentResults = []; renderResults(); switchTab('results'); showToast(t('processFailed'), 'error'); } finally { purifyBtn.disabled = false; } }
+function applyLanguage() { document.documentElement.lang = currentLanguage; document.title = t('title'); document.querySelectorAll('[data-i18n]').forEach((node) => { const key = node.dataset.i18n; if (node.dataset.i18nAttr) node.setAttribute(node.dataset.i18nAttr, t(key)); else node.textContent = t(key); }); charCount.textContent = t('characterCount', { count: inputText.value.length }); languageToggle.setAttribute('aria-label', t('language')); languageToggle.title = t('language'); renderResults(currentResults); renderHistory(); if (modalOverlay.classList.contains('active')) closeModal(); }
+document.addEventListener('click', (event) => { const target = event.target.closest('[data-action]'); if (!target) return; const { action, payload } = target.dataset; if (action === 'copy' || action === 'copy-all') copy(payload).catch(() => showToast(t('copyFailed'), 'error')); else if (action === 'visit') window.open(payload, '_blank', 'noopener,noreferrer'); else if (action === 'history-detail') details(payload, target); else if (action === 'history-delete') { historyData = historyData.filter((item) => item.id !== payload); saveHistory(); renderHistory(); showToast(t('deleted'), 'success'); } else if (action === 'history-clear') setModal(t('confirmClear'), [el('p', { className: 'modal-text', text: t('confirmClearText') })], [button('cancel', 'modal-close'), button('confirm', 'history-clear-confirm', '', 'btn btn-primary')], target); else if (action === 'history-clear-confirm') { historyData = []; saveHistory(); renderHistory(); switchTab('history'); closeModal(); showToast(t('cleared'), 'success'); } else if (action === 'modal-close') closeModal(); else if (action.startsWith('help-')) info(action.slice(5), target); });
+purifyBtn.addEventListener('click', purify); $('clearInputBtn').addEventListener('click', () => { inputText.value = ''; charCount.textContent = t('characterCount', { count: 0 }); inputText.focus(); }); themeToggle.addEventListener('click', () => setTheme(document.documentElement.dataset.theme !== 'dark')); languageToggle.addEventListener('click', () => { currentLanguage = currentLanguage === 'zh-CN' ? 'en' : 'zh-CN'; safeStorage.set(LANGUAGE_KEY, currentLanguage); applyLanguage(); }); inputText.addEventListener('input', () => { charCount.textContent = t('characterCount', { count: inputText.value.length }); }); inputText.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); purify(); } }); document.querySelector('.tabs').addEventListener('click', (e) => { const tab = e.target.closest('[role="tab"]'); if (tab) switchTab(tab.dataset.tab); }); document.querySelector('.tabs').addEventListener('keydown', (e) => { const names = ['results', 'history']; const index = names.findIndex((name) => $(`tab${name[0].toUpperCase()}${name.slice(1)}`) === document.activeElement); if (index < 0) return; const next = e.key === 'Home' ? 0 : e.key === 'End' ? 1 : ['ArrowLeft', 'ArrowRight'].includes(e.key) ? (index + 1) % 2 : null; if (next !== null) { e.preventDefault(); switchTab(names[next], true); } }); modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); }); document.addEventListener('keydown', (e) => { if (!modalOverlay.classList.contains('active')) return; if (e.key === 'Escape') closeModal(); });
+setTheme(safeStorage.get(THEME_KEY) === 'dark'); loadHistory(); applyLanguage(); switchTab('history');
+})();

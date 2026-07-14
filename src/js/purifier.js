@@ -1,3 +1,6 @@
+(function (global) {
+'use strict';
+
 /**
  * Pure URL extraction and repair helpers.  This module deliberately keeps
  * pathname, query string and fragment conservative: hostname is the only
@@ -10,7 +13,7 @@ const CJK = /[\u3400-\u9FFF\uF900-\uFAFF]/u;
 const ASCII_LABEL = /^[a-z0-9-]+$/i;
 const TRAILING_PUNCTUATION = /[，,。；;、.!！?？：:]+$/u;
 
-export function normalizeInput(input) {
+function normalizeInput(input) {
   return String(input ?? '').normalize('NFKC').replace(INVISIBLE, '');
 }
 
@@ -28,7 +31,7 @@ function canContinueHostAfterSpace(text, index) {
 }
 
 /** Extract broad candidates, without allowing one candidate to consume another. */
-export function extractUrlCandidates(input) {
+function extractUrlCandidates(input) {
   const text = normalizeInput(input);
   const candidates = [];
   for (let start = 0; start < text.length; start += 1) {
@@ -98,7 +101,7 @@ function credentialsPresent(authority) {
   return authority.includes('@');
 }
 
-export function validatePurifiedUrl(value) {
+function validatePurifiedUrl(value) {
   if (typeof value !== 'string' || /https?:\/\/.*https?:\/\//iu.test(value)) return false;
   try {
     const url = new URL(value);
@@ -110,7 +113,7 @@ export function validatePurifiedUrl(value) {
   }
 }
 
-export function purifyUrlCandidate(original) {
+function purifyUrlCandidate(original) {
   const normalized = normalizeInput(original);
   const parts = splitUrl(normalized);
   if (!parts) return null;
@@ -134,7 +137,7 @@ export function purifyUrlCandidate(original) {
   };
 }
 
-export function extractAndPurifyUrls(input) {
+function extractAndPurifyUrls(input) {
   const seen = new Set();
   return extractUrlCandidates(input).map(purifyUrlCandidate).filter((item) => {
     if (!item || seen.has(item.purified)) return false;
@@ -143,7 +146,7 @@ export function extractAndPurifyUrls(input) {
   });
 }
 
-export function redactCredentials(value) {
+function redactCredentials(value) {
   try {
     const url = new URL(value);
     if (!url.username && !url.password) return value;
@@ -154,3 +157,13 @@ export function redactCredentials(value) {
     return value;
   }
 }
+
+global.UrlPurifier = Object.freeze({
+  normalizeInput,
+  extractUrlCandidates,
+  purifyUrlCandidate,
+  validatePurifiedUrl,
+  extractAndPurifyUrls,
+  redactCredentials,
+});
+})(globalThis);

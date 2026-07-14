@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { extractAndPurifyUrls, extractUrlCandidates, normalizeInput, purifyUrlCandidate, validatePurifiedUrl } from '../src/js/purifier.js';
+import '../src/js/purifier.js';
+const { extractAndPurifyUrls, extractUrlCandidates, normalizeInput, purifyUrlCandidate, validatePurifiedUrl } = globalThis.UrlPurifier;
 
 const urls = (input) => extractAndPurifyUrls(input).map((item) => item.purified);
 

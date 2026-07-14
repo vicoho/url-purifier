@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>网址净化工具 - URL Purifier</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23E57035'/%3E%3Cpath d='M24 34.5l-3.2 3.2a8 8 0 0011.3 11.3l5.5-5.5a8 8 0 00-2.5-13' fill='none' stroke='white' stroke-width='4.5' stroke-linecap='round'/%3E%3Cpath d='M40 29.5l3.2-3.2A8 8 0 0031.9 15l-5.5 5.5a8 8 0 002.5 13' fill='none' stroke='white' stroke-width='4.5' stroke-linecap='round'/%3E%3Cpath d='M27.5 36.5l9-9' stroke='white' stroke-width='4.5' stroke-linecap='round'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@500;600;700&amp;display=swap" rel="stylesheet">
     <link rel="stylesheet" href="src/css/style.css">
 </head>
 <body>
@@ -20,14 +23,16 @@
                 </div>
                 <div>
                     <p class="eyebrow">URL Purifier</p>
-                    <h1>网址净化工具</h1>
+                    <h1 data-i18n="brand">网址净化工具</h1>
                 </div>
             </div>
+            <div class="topbar-actions">
+            <button class="theme-toggle" id="languageToggle" type="button" title="切换到 English" aria-label="切换到 English">中/A</button>
             <button class="theme-toggle" id="themeToggle" type="button" title="切换到深色模式" aria-label="切换到深色模式">
                 <svg id="moonIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                 </svg>
-                <svg id="sunIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+                <svg id="sunIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden>
                     <circle cx="12" cy="12" r="5"></circle>
                     <line x1="12" y1="1" x2="12" y2="3"></line>
                     <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -39,23 +44,24 @@
                     <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
                 </svg>
             </button>
+            </div>
         </header>
 
         <section class="workspace-grid">
             <div class="work-panel input-panel">
                 <div class="panel-heading">
                     <div>
-                        <p class="panel-kicker">Input</p>
-                        <h3>粘贴污染文本</h3>
+                        <p class="panel-kicker" data-i18n="inputKicker">输入</p>
+                        <h3 data-i18n="inputTitle">粘贴污染文本</h3>
                     </div>
                     <span class="char-count" id="charCount">已输入 0 字符</span>
                 </div>
-                <label class="sr-only" for="inputText">需要净化的文本</label>
+                <label class="sr-only" for="inputText" data-i18n="inputLabel">需要净化的文本</label>
                 <div class="input-wrapper">
                     <textarea
                         class="input-area"
                         id="inputText"
-                        placeholder="例如：https://exa😊mple.com/path&#10;或者：复制这段文字 https://exa mple.com 到浏览器打开"
+                        placeholder="例如：https://exa😊mple.com/path&#10;或者：复制这段文字 https://exa mple.com 到浏览器打开" data-i18n="placeholder" data-i18n-attr="placeholder"
                     ></textarea>
                 </div>
                 <div class="action-row">
@@ -63,17 +69,17 @@
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
                         </svg>
-                        一键净化
+                        <span data-i18n="purify">一键净化</span>
                     </button>
-                    <button class="btn btn-secondary" type="button" id="clearInputBtn">清空输入</button>
-                    <span class="hint-text">⌘ / Ctrl + Enter 快速净化</span>
+                    <button class="btn btn-secondary" type="button" id="clearInputBtn" data-i18n="clearInput">清空输入</button>
+                    <span class="hint-text" data-i18n="shortcut">⌘ / Ctrl + Enter 快速净化</span>
                 </div>
             </div>
 
             <div class="work-panel output-panel">
-                <div class="tabs" role="tablist" aria-label="输出内容">
-                    <button class="tab" data-tab="results" id="tabResults" type="button" role="tab" aria-selected="false" aria-controls="contentResults" tabindex="-1">净化结果</button>
-                    <button class="tab active" data-tab="history" id="tabHistory" type="button" role="tab" aria-selected="true" aria-controls="contentHistory" tabindex="0">历史记录</button>
+                <div class="tabs" role="tablist" aria-label="输出内容" data-i18n="tabLabel" data-i18n-attr="aria-label">
+                    <button class="tab" data-tab="results" id="tabResults" type="button" role="tab" aria-selected="false" aria-controls="contentResults" tabindex="-1" data-i18n="results">净化结果</button>
+                    <button class="tab active" data-tab="history" id="tabHistory" type="button" role="tab" aria-selected="true" aria-controls="contentHistory" tabindex="0" data-i18n="history">历史记录</button>
                 </div>
 
                 <div class="tab-content" id="contentResults" role="tabpanel" aria-labelledby="tabResults" hidden>
@@ -83,7 +89,7 @@
                                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
                             </svg>
-                            <p>净化后的网址会显示在这里</p>
+                            <p data-i18n="resultsEmpty">净化后的网址会显示在这里</p>
                         </div>
                     </div>
                 </div>
@@ -95,7 +101,7 @@
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <polyline points="12 6 12 12 16 14"></polyline>
                             </svg>
-                            <p>暂无历史记录，快去净化第一个网址吧</p>
+                            <p data-i18n="historyEmpty">暂无历史记录，快去净化第一个网址吧</p>
                         </div>
                     </div>
                 </div>
@@ -105,25 +111,25 @@
         <section class="tips-strip" aria-label="使用提示">
             <div>
                 <strong>Tip 01</strong>
-                <p>支持一次粘贴多段文本，自动识别其中的多个网址。</p>
+                <p data-i18n="tip1">支持一次粘贴多段文本，自动识别其中的多个网址。</p>
             </div>
             <div>
                 <strong>Tip 02</strong>
-                <p>所有处理都在浏览器本地完成，文本不会上传。</p>
+                <p data-i18n="tip2">网址净化在浏览器中完成，输入内容不会上传。</p>
             </div>
             <div>
                 <strong>Tip 03</strong>
-                <p>按 ⌘ / Ctrl + Enter 可以快速净化当前输入内容。</p>
+                <p data-i18n="tip3">按 ⌘ / Ctrl + Enter 可以快速净化当前输入内容。</p>
             </div>
         </section>
 
         <footer class="footer">
             <div class="footer-links">
-                <button type="button" class="footer-link" data-action="help-help">使用说明</button>
-                <button type="button" class="footer-link" data-action="help-faq">常见问题</button>
-                <button type="button" class="footer-link" data-action="help-about">关于</button>
+                <button type="button" class="footer-link" data-action="help-help" data-i18n="help">使用说明</button>
+                <button type="button" class="footer-link" data-action="help-faq" data-i18n="faq">常见问题</button>
+                <button type="button" class="footer-link" data-action="help-about" data-i18n="about">关于</button>
             </div>
-            <p class="footer-copyright">网址净化工具 · 纯本地处理，保护您的隐私</p>
+            <p class="footer-copyright" data-i18n="footer">网址内容仅在浏览器中处理</p>
         </footer>
     </main>
 
@@ -133,7 +139,7 @@
         <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
             <div class="modal-header">
                 <h3 class="modal-title" id="modalTitle">标题</h3>
-                <button class="modal-close" type="button" data-action="modal-close" aria-label="关闭">
+                <button class="modal-close" type="button" data-action="modal-close" aria-label="关闭" data-i18n="close" data-i18n-attr="aria-label">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -145,6 +151,8 @@
         </div>
     </div>
 
-    <script type="module" src="src/js/app.js"></script>
+    <script src="src/js/i18n.js"></script>
+    <script src="src/js/purifier.js"></script>
+    <script src="src/js/app.js"></script>
 </body>
 </html>
