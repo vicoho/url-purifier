@@ -27,7 +27,16 @@
                 </div>
             </div>
             <div class="topbar-actions">
-            <button class="theme-toggle" id="languageToggle" type="button" title="切换到 English" aria-label="切换到 English">中/A</button>
+            <button class="theme-toggle" id="languageToggle" type="button" title="切换到 English" aria-label="切换到 English">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="m5 8 6 6"></path>
+                    <path d="m4 14 6-6 2-3"></path>
+                    <path d="M2 5h12"></path>
+                    <path d="M7 2h1"></path>
+                    <path d="m22 22-5-10-5 10"></path>
+                    <path d="M14 18h6"></path>
+                </svg>
+            </button>
             <button class="theme-toggle" id="themeToggle" type="button" title="切换到深色模式" aria-label="切换到深色模式">
                 <svg id="moonIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
@@ -52,7 +61,17 @@
                 <div class="panel-heading">
                     <div>
                         <p class="panel-kicker" data-i18n="inputKicker">输入</p>
-                        <h3 data-i18n="inputTitle">粘贴污染文本</h3>
+                        <div class="input-title-row">
+                            <h3 data-i18n="inputTitle">粘贴污染文本</h3>
+                            <button class="clear-input-link" type="button" id="clearInputBtn" hidden>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M3 6h18"></path>
+                                    <path d="M8 6V4h8v2"></path>
+                                    <path d="M19 6l-1 14H6L5 6"></path>
+                                </svg>
+                                <span data-i18n="clearInput">清空输入</span>
+                            </button>
+                        </div>
                     </div>
                     <span class="char-count" id="charCount">已输入 0 字符</span>
                 </div>
@@ -71,7 +90,6 @@
                         </svg>
                         <span data-i18n="purify">一键净化</span>
                     </button>
-                    <button class="btn btn-secondary" type="button" id="clearInputBtn" data-i18n="clearInput">清空输入</button>
                     <span class="hint-text" data-i18n="shortcut">⌘ / Ctrl + Enter 快速净化</span>
                 </div>
             </div>

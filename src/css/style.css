@@ -191,6 +191,19 @@ a:focus-visible {
     height: 20px;
 }
 
+.theme-toggle svg[hidden] {
+    display: none;
+}
+
+.theme-toggle.is-switching svg:not([hidden]) {
+    animation: iconSwap 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes iconSwap {
+    from { opacity: 0; transform: rotate(-45deg) scale(0.65); }
+    to { opacity: 1; transform: rotate(0) scale(1); }
+}
+
 /* ===== Workspace ===== */
 .workspace-grid {
     display: grid;
@@ -229,10 +242,42 @@ a:focus-visible {
 }
 
 .panel-heading h3 {
-    margin-top: 2px;
+
     font-size: 20px;
     font-weight: 700;
     line-height: 1.25;
+}
+
+.input-title-row {
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.clear-input-link {
+    display: inline-flex;
+    gap: 3px;
+    padding: 4px 8px;
+    border: 1px solid var(--border-light);
+    border-radius: 999px;
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.clear-input-link[hidden] { display: none; }
+.clear-input-link:hover { color: var(--color-primary); }
+.clear-input-link svg {
+    display: block;
+    flex: 0 0 14px;
+    width: 14px;
+    height: 14px;
+    transform: translateY(1px);
 }
 
 .char-count,
@@ -577,10 +622,10 @@ a:focus-visible {
 /* ===== Toast ===== */
 .toast {
     position: fixed;
-    bottom: 24px;
+    top: max(20px, env(safe-area-inset-top));
     left: 50%;
     z-index: 1000;
-    transform: translateX(-50%) translateY(100px);
+    transform: translateX(-50%) translateY(-100px);
     max-width: calc(100% - 32px);
     padding: 11px 18px;
     border-radius: var(--radius-md);
